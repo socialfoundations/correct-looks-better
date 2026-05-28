@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rank_no_eval"
+dynamic = ["version"]
+dependencies = [
+    "vllm==0.11.0",
+    "datasets==3.6.0",
+    "python-dotenv==1.1.1",
+    "Jinja2==3.1.6",
+    "litellm==1.74.4",
+    "trueskill==0.4.5",
+    "flashinfer-python==0.2.7.post1",
+    "uncertainties==3.2.3",
+    "backoff==2.2.1",
+    "openai-harmony==0.0.3",
+    "scikit-learn==1.7.2",
+]

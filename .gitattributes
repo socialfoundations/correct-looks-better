@@ -1,0 +1,15 @@
+# Model answers
+out/answers/** filter=lfs diff=lfs merge=lfs -text
+# Model answers metadata
+out/answers_metadata/** filter=lfs diff=lfs merge=lfs -text
+# Echo detection 
+out/echo_detection/** filter=lfs diff=lfs merge=lfs -text
+# "Matches" - data which is used to construct rankings
+#### Exact matching: does provided answer exactly match ground truth?
+out/matches/exact_answer_matches/** filter=lfs diff=lfs merge=lfs -text
+#### Answer matching using LLM-as-a-judge: is provided answer the same as ground truth according to an LLM?
+out/matches/answer_matching/** filter=lfs diff=lfs merge=lfs -text
+#### Answer matching using LLM-as-a-judge without ground truth: is provided answer correct?
+out/matches/answer_matching_no_gt/** filter=lfs diff=lfs merge=lfs -text
+#### Pairwise comparisons between answers: which of two provided answers is better according to an LLM?
+out/matches/pairwise_comparisons/** filter=lfs diff=lfs merge=lfs -text

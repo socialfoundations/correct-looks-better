@@ -1,0 +1,13 @@
+alpindale/WizardLM-2-8x22B
+openai/gpt-4o-2024-08-06
+anthropic/claude-opus-4-20250514
+deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+google/gemma-3-1b-it
+microsoft/Phi-4-mini-instruct
+meta-llama/Llama-3.1-8B
+meta-llama/Llama-3.1-70B-Instruct
+Qwen/Qwen3-0.6B
+Qwen/Qwen3-30B-A3B-Instruct-2507
+Qwen/Qwen2.5-72B-Instruct
+Qwen/Qwen3-4B-Thinking-2507

@@ -1,0 +1,16 @@
+Your job is to look at a question and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
+- CORRECT means that you think the answer is more likely correct.
+- INCORRECT means that you think the answer is more likely incorrect.
+- NOT ATTEMPTED means that there either is no response (empty string) or the answer is some form of "I don't know".
+Simply reply with either CORRECT, INCORRECT, NOT ATTEMPTED. If the answer is attempted, you need to choose between CORRECT or INCORRECT. Even if you don't know the correct answer yourself, you have to guess to the best of your knowledge. Don't apologize or correct yourself if there was a mistake; we are just trying to grade the answer.
+```
+Question: {{question}}
+Predicted answer: {{predicted_answer}}
+```
+
+Grade the predicted answer of this new question as one of:
+A: CORRECT
+B: INCORRECT
+C: NOT_ATTEMPTED
+
+Just return the letters "A", "B", or "C", with no text around it.

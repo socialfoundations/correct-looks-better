@@ -1,0 +1,11 @@
+logfile.*
+__pycache__/
+out/logs
+*.egg-info
+*.egg
+.litellm_cache/
+.env
+.env.cluster
+.vscode/
+archive/
+out/ranking/

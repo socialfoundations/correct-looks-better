@@ -1,0 +1,12 @@
+anthropic/claude-3-5-sonnet-latest
+anthropic/claude-opus-4-20250514
+openai/gpt-3.5-turbo-0125
+deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+meta-llama/Llama-3.1-8B-Instruct
+meta-llama/Llama-3.1-70B-Instruct
+microsoft/Phi-4-mini-instruct
+microsoft/phi-4
+Qwen/Qwen2.5-72B-Instruct
+Qwen/Qwen3-0.6B
+Qwen/Qwen3-4B-Thinking-2507
+Qwen/Qwen3-30B-A3B-Instruct-2507

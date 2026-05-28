@@ -1,0 +1,123 @@
+markdown:
+  - text: "# This is a header\n\nThis is some text.\n\n- This is a list item.\n\n**This is bold text.**"
+    expected:
+      header:
+        h1: 1
+        h2: 0
+        h3: 0
+        h4: 0
+        h5: 0
+        h6: 0
+      list:
+        ordered: 0
+        unordered: 1
+      bold:
+        "**": 1
+        "__": 0
+
+latex:
+  # MMLU-Pro, 101, Qwen/Qwen2.5-72B-Instruct
+  - text: |
+      To determine the break-even point, we need to find the number of items the man must sell such that his total revenue equals his total cost.
+
+      1. Define the variables:
+      - Let \( x \) be the number of items sold.
+      - The selling price per item is $1.25.
+      - The variable cost per item is $0.75.
+      - The fixed cost is $140,000.
+
+      2. Formulate the total revenue and total cost:
+      - Total Revenue (TR) = Selling price per item \(\times\) Number of items sold
+      \[
+      \text{TR} = 1.25x
+      \]
+      - Total Cost (TC) = Fixed cost + (Variable cost per item \(\times\) Number of items sold)
+      \[
+      \text{TC} = 140,000 + 0.75x
+      \]
+
+      3. Set up the break-even equation:
+      - At the break-even point, Total Revenue equals Total Cost:
+      \[
+      1.25x = 140,000 + 0.75x
+      \]
+
+      4. Solve for \( x \):
+      - Subtract \( 0.75x \) from both sides to isolate \( x \):
+      \[
+      1.25x - 0.75x = 140,000
+      \]
+      \[
+      0.50x = 140,000
+      \]
+      - Divide both sides by 0.50:
+      \[
+      x = \frac{140,000}{0.50}
+      \]
+      \[
+      x = 280,000
+      \]
+
+      5. Calculate the sales revenue at the break-even point:
+      - Sales Revenue (SR) = Selling price per item \(\times\) Number of items sold
+      \[
+      \text{SR} = 1.25 \times 280,000
+      \]
+      \[
+      \text{SR} = 350,000
+      \]
+
+      Therefore, the man must sell 280,000 items to break even, and his sales revenue at that point will be $350,000.
+    expected:
+      inline: 7
+      display: 9
+  # Don't match math inside $$ $$ blocks as two 'empty' inline math elements
+  - text: |
+      Inline math: $x+y$ and \(z\).
+      Display math: $$a=b$$ and \[
+      c=d
+      \]
+    expected:
+      inline: 2
+      display: 2
+  # GSM8K, 345, Qwen/Qwen1.5-14B-Chat
+  - text: |
+      To calculate the total number of legs, we need to multiply the number of tables with each type by the number of legs they have and then add the two totals together.
+
+      For the tables with 4 legs:
+      \( 40 \text{ tables} \times 4 \text{ legs/table} = 160 \text{ legs} \)
+
+      For the tables with 3 legs:
+      \( 50 \text{ tables} \times 3 \text{ legs/table} = 150 \text{ legs} \)
+
+      Now, we add the two totals together:
+      \( 160 \text{ legs} + 150 \text{ legs} = 310 \text{ legs} \)
+
+      So, the restaurant's tables have a total of 310 legs.
+    expected:
+      inline: 3
+      display: 0
+  # GSM8K, 490, Qwen/Qwen2.5-14B-Instruct
+  - text: |
+      To determine how many days it will take for the child to save the remaining amount, we first need to calculate the difference between the cost of the toy car and the child's current savings.
+
+      The cost of the toy car is $12.
+      The child currently has $4 saved up.
+
+      So, the remaining amount needed is:
+      \[ 12 - 4 = 8 \]
+
+      Next, we know that the child saves $2 each day. We need to find out how many days it will take to save $8 at this rate.
+
+      We divide the remaining amount by the daily savings:
+      \[ \frac{8}{2} = 4 \]
+
+      Therefore, it will take the child 4 days to save the remaining $8.
+
+      So, the final answer is:
+      \[
+      \boxed{4}
+      \] days.
+    expected:
+      inline: 0
+      display: 3

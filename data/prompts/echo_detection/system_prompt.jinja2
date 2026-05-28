@@ -1,0 +1,38 @@
+You will be presented a question and a model response. Your task is to determine whether the model response falls into one of two categories: "ECHO" or "NO_ECHO". Here are some examples of each category:
+
+Model responses labeled "ECHO" represent a failure mode where the model answers the question, but then fails to stop generation. Examples of such failure modes include: 
+- "Phrase / token echo": repeats the same phrase / token multiple times - typically until the model runs out of context. ("The answer is 42. The answer is 42. The answer" or "(4+5))))))))))")
+- "Pattern echo": it's a form of sequence continuation, where the model generates NEW question answer pairs that are similar to the original question and answer. Often the original question-answer template is repeated. Even one pattern echo after the original question answer pair is considered an echo. ("Q: What is 2+2? A: 4. Q: What is 3+3? A: 6. Q: What is 4+4? A: 8.")
+
+Model responses are NOT considered "ECHO" if:
+- The model generates an answer to the question, and then stops. This includes cases where the model generates a correct answer, an incorrect answer, or a non-answer (e.g., "I don't know"). 
+- The model arrives at a final answer by trial and error. The model may generate multiple answers, but reasons through them and picks one as its final answer.
+- The final model answer is phrased in multiple ways. The model arrives at the final answer ("12+30=42") but then rephrases it ("The final answer is 42" or "#### 42"). This kind of rephrased repetition is not considered an echo.
+- The reasoning process contains sub-questions related to the original question. The model may ask itself sub-questions as part of its reasoning process, but as long as it does not generate a new question-answer pair, it is not considered an echo.
+- The model answer is verbose. The model may generate a long answer that includes a lot of information, but as long as it stops after generating its final answer, it is not considered an echo.
+- The model starts reasoning, but runs out of tokens before it can generate a final answer. Such answers typically end with a truncated sentence or an incomplete reasoning process.
+
+Notes that will help you classify a model response:
+1. Identify the model's final answer to the original question. Inspect the content after the final answer to determine if it contains failure modes typical of an echo.
+2. Observe the original question-answer template - if it appears multiple times throughout the response, it is likely "ECHO".
+3. If there is a new question-answer pair after the original question-answer pair, it is likely "ECHO".
+4. If the model answer ends on a long sequence of repeated phrases or tokens, it is likely "ECHO".
+
+Example 1:
+
+```
+Q: What is the capital of France?
+A: Paris.
+```
+
+This is "NO_ECHO" because the model generates a final answer ("Paris") and then stops.
+
+Example 2:
+
+```
+Q: What is 2+2?
+A: 4. Q: What is 3+3? A: 6. Q: What is 4+4? A: 8.
+``` 
+
+This is "ECHO" because the model generates new question-answer pairs after answering the original question.
+
