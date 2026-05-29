@@ -1,131 +1,146 @@
 # Correct Looks Better: Pairwise Comparisons Reveal Accuracy Rankings
 
-Code for the ICML 2026 paper *Correct Looks Better: Pairwise Comparisons Reveal
-Accuracy Rankings* (Remeli & Hardt). Reproduces the main-body experiments
-comparing accuracy-based rankings to LLM-as-a-judge rankings (pairwise
-Bradley-Terry vs. direct judge) across five benchmarks.
+Code repository for the ICML 2026 paper *Correct Looks Better: Pairwise Comparisons
+Reveal Accuracy Rankings* (Remeli & Hardt).
 
-## Setup
+## Install
 
 ```bash
 pip install -e src/
 cp .env.public .env   # then fill in API keys
 ```
 
-## Benchmarks and models
+## Benchmarks
 
-| Paper name      | `--dataset`     | Format                |
-|-----------------|-----------------|-----------------------|
-| MMLU-Pro        | `mmlu_pro`      | MCQ → freeform        |
-| GPQA-Diamond    | `gpqa_diamond`  | MCQ → freeform        |
-| SimpleQA        | `simple_qa`     | freeform              |
-| GSM8K           | `gsm8k`         | freeform              |
-| BBH (multitask) | `bbh`           | mixed (17 sub-tasks)  |
+| `--dataset`    | Paper name      | Format               | Model list                    |
+|----------------|-----------------|----------------------|-------------------------------|
+| `mmlu_pro`     | MMLU-Pro        | MCQ → freeform       | `models/models-mmlu.txt`      |
+| `gpqa_diamond` | GPQA-Diamond    | MCQ → freeform       | `models/models-gpqa.txt`      |
+| `simple_qa`    | SimpleQA        | freeform             | `models/models-simple-qa.txt` |
+| `gsm8k`        | GSM8K           | freeform             | `models/models-gsm8k.txt`     |
+| `bbh`          | BBH (multitask) | mixed (17 sub-tasks) | `models/models-bbh.txt`       |
 
-Per-benchmark model lists are in `models/models-<dataset>.txt`. Main-body judges
-are `openai/gpt-oss-20b` (primary), `openai/gpt-oss-120b`, and `openai/o3`.
+All commands are run from the repo root.
 
-## Reproducing the main-body experiments
+## Pipeline
 
-Run all commands from the repo root. `ranking.py` and `prompt.py` cache their
-outputs under `out/`; re-running with the same configuration loads the cache
-instead of re-querying the LLM (see [Caching](#caching)).
+```
+prompt.py          ranking.py                 scripts/rank_similarity.py
+collect            score & rank by:           compare any two rankings on
+answers            • accuracy (GT match)      the same (dataset, model set)
+                   • LLM grader (AM, w/ GT)
+                   • direct judge   (AM)
+                   • pairwise       (Pairwise)
+```
 
-For experiments from the paper appendices, see [APPENDIX.md](APPENDIX.md).
+## 1. Collect answers
 
-### 1. Collect model answers (prerequisite)
+`--query-mode` selects the prompt format:
+
+| Value      | Use for                                                  |
+|------------|----------------------------------------------------------|
+| `MCQ`      | MMLU-Pro and GPQA-Diamond accuracy ranking (§2a)         |
+| `freeform` | Everything else — pairwise comparisons, direct judge, LLM-grader accuracy. On MCQ benchmarks this strips the answer options. |
 
 ```bash
+# API inference (LiteLLM)
 python prompt.py --model-name openai/gpt-oss-20b --dataset mmlu_pro \
     --query-mode freeform --litellm
+
+# Local inference (vLLM); drop --litellm
+python prompt.py --model-name Qwen/Qwen3-0.6B --dataset gsm8k \
+    --query-mode freeform
 ```
 
-Drop `--litellm` to serve a local model with vLLM. Repeat per model per benchmark.
+For MMLU-Pro and GPQA-Diamond, collect **both** modes — `MCQ` for the
+accuracy reference, `freeform` for the judge-based rankings. Repeat per
+model per benchmark.
 
-### 2. §5.1 — Pairwise ranking aligns with accuracy
+## 2. Accuracy ranking
 
-`ranking.py` selects the scoring method via a positional subcommand: omit it
-for accuracy, `Pairwise` for pairwise judge methods, `AM` for direct judge.
+### 2a. Exact match to ground truth (MMLU-Pro, GPQA-Diamond, BBH)
 
 ```bash
-# Accuracy-based (gold) ranking
 python ranking.py --models-file models/models-mmlu.txt --dataset mmlu_pro
-
-# Pairwise Bradley-Terry ranking
-python ranking.py --models-file models/models-mmlu.txt --dataset mmlu_pro \
-    Pairwise --what BradleyTerry \
-    --judge-model openai/gpt-oss-20b --client litellm
 ```
 
-Repeat per benchmark with the matching `models/models-<dataset>.txt`.
-
-Rank-correlation between the two rankings (Spearman's ρ, Kendall's τ,
-Pearson's R):
+### 2b. LLM grader against the ground truth (SimpleQA, GSM8K)
 
 ```bash
-export PYTHONPATH=scripts
-python scripts/rank_similarity.py --dataset mmlu_pro --metric rho \
-    --judge openai/gpt-oss-20b --method BradleyTerry
+python ranking.py --models-file models/models-simple-qa.txt --dataset simple_qa \
+    AM --judge-model openai/gpt-oss-20b --client litellm --with-ground-truth
 ```
 
-Add `--bootstrap` for the 95 % CIs (stored in
-`out/bootstrap/<dataset>/<models_id>/`).
+## 3. Direct judge ranking
 
-### 3. §5.2 — Direct judge baseline
+Same `AM` subcommand as §2b but the judge sees only the question and the
+answer (no gold):
 
 ```bash
 python ranking.py --models-file models/models-simple-qa.txt --dataset simple_qa \
     AM --judge-model openai/gpt-oss-20b --client litellm
 ```
 
-`AM` without `--with-ground-truth` is the direct judge baseline (no gold
-answer shown). With `--with-ground-truth` the judge grades against the gold
-answer — used for the SimpleQA / GSM8K accuracy reference.
+## 4. Pairwise ranking
 
-BT vs. Direct Judge across judges and benchmarks:
+```bash
+python ranking.py --models-file models/models-mmlu.txt --dataset mmlu_pro \
+    Pairwise --what BradleyTerry \
+    --judge-model openai/gpt-oss-20b --client litellm
+```
+
+### `Pairwise` flags
+
+| Flag             | Values                                       | Effect                                                |
+|------------------|----------------------------------------------|-------------------------------------------------------|
+| `--what`         | `BradleyTerry`, `Elo`, `TrueSkill-M`, `WinRate` | Aggregation method (`BradleyTerry` is the paper's default) |
+| `--judge-model`  | any LiteLLM-routable model                   | Judge identity                                        |
+| `--control-for`  | `style`, `self-preference`, `both`           | Bias features absorbed by the BT fit                  |
+| `--pair-filter`  | `verifiable`, `unverifiable`                 | Restrict to pairs with one / zero or two correct answers (requires §2) |
+| `--client`       | `litellm`, `vllm`                            | Judge inference backend                               |
+
+The paper uses `openai/gpt-oss-20b` (weak / primary judge),
+`openai/gpt-oss-120b` (middle), and `openai/o3` (strong) for the
+weak-judge regime on SimpleQA.
+
+## 5. Compare rankings
 
 ```bash
 export PYTHONPATH=scripts
+```
+
+### 5a. One ranking vs. accuracy
+
+```bash
+python scripts/rank_similarity.py --dataset mmlu_pro --metric rho \
+    --judge openai/gpt-oss-20b --method BradleyTerry
+```
+
+| Flag          | Values                              | Effect                                  |
+|---------------|-------------------------------------|-----------------------------------------|
+| `--metric`    | `rho`, `tau`, `R`                   | Spearman ρ / Kendall τ / Pearson R      |
+| `--method`    | `BradleyTerry`, `AM`, …             | Which §3 / §4 ranking to load           |
+| `--bias`      | `style`, `self-preference`, `both`  | Pick a bias-corrected BT ranking (§4)   |
+| `--bootstrap` | flag                                | 95 % CIs over bootstrap resamples       |
+
+### 5b. Across judges and benchmarks
+
+```bash
 python scripts/judge_comparison/judge_comparison_table.py \
     --datasets mmlu_pro gpqa_diamond simple_qa gsm8k bbh \
     --methods BradleyTerry --metric tau
 ```
 
-The weak-judge regime on SimpleQA is the same pipeline with judges of varying
-strength: `gpt-oss-20b` (weak), `gpt-oss-120b` (middle), `o3` (strong).
+## 6. Echo detection and intervention
 
-### 4. §5.3 — Bias correction
-
-Bradley-Terry with feature controls for *style* (length, formatting) and
-*self-preference* (judge and candidate from the same model family):
-
-```bash
-python ranking.py --models-file models/models-mmlu.txt --dataset mmlu_pro \
-    Pairwise --what BradleyTerry \
-    --judge-model openai/gpt-oss-20b --client litellm \
-    --control-for style                       # or: self-preference, or both
-```
-
-Re-run `scripts/rank_similarity.py` with `--bias style|self-preference|both`
-to compare against the uncorrected ranking.
-
-### 5. §5.4 — Echo as a causal driver on non-discriminative pairs
-
-(For the discriminative vs. non-discriminative split itself, see
-[APPENDIX.md](APPENDIX.md#appendix-d--discriminative-vs-non-discriminative-pairs).)
-
-Detect echo in collected answers:
+Label cached answers for echo (question repetition after the final answer):
 
 ```bash
 python echo_detection.py --dataset bbh --models-file models/models-bbh.txt
 ```
 
-The detector is hard-wired to `openai/gpt-oss-120b` via **vLLM** — you need
-the weights locally and a GPU with enough memory. The detection prompt lives
-in `data/prompts/echo_detection/`.
-
-Run the controlled intervention — add echo to one answer, re-query the judge,
-measure the causal effect:
+Run the controlled intervention (perturb one answer in each pair, re-query
+the judge, write paired original / counterfactual verdicts):
 
 ```bash
 python scripts/pp_experiments/intervention_study/run_intervention.py \
@@ -133,30 +148,27 @@ python scripts/pp_experiments/intervention_study/run_intervention.py \
     --judge openai/o3 --n 500 --seed 42
 ```
 
+| Flag             | Values            | Effect                                 |
+|------------------|-------------------|----------------------------------------|
+| `--intervention` | `add_echo`        | Perturbation applied to one answer     |
+| `--n`            | int               | Number of pairs to sample              |
+| `--judge`        | any LiteLLM model | Judge re-queried on the perturbed pair |
+
 ## Repository layout
 
-```
-src/rank_no_eval/        installable package (clients, eval objects, queries, rankers)
-prompt.py                collect model answers
-ranking.py               build a ranking with a chosen score
-echo_detection.py        run echo detection on collected answers
-scripts/                  analysis scripts (rank correlation, judge comparison, intervention study)
-models/                  per-benchmark model lists
-out/                     cached answers, matches, bootstrap arrays (not checked in)
-```
+| Path                | Role                                                       |
+|---------------------|------------------------------------------------------------|
+| `src/rank_no_eval/` | Installable package — clients, queries, rankers            |
+| `prompt.py`         | §1 — collect answers                                       |
+| `ranking.py`        | §2–§4 — accuracy / direct judge / pairwise rankings        |
+| `echo_detection.py` | §6 — label answers for echo                                |
+| `scripts/`          | §5 — rank correlation, judge comparison, intervention study |
+| `data/prompts/`     | Jinja templates for every judge / generation prompt        |
+| `models/`           | Per-benchmark model lists                                  |
+| `out/`              | Cached answers, matches, bootstrap arrays (not checked in) |
 
-## Caching
-
-`out/` holds all cached artifacts:
-
-- `answers/<query_mode>/<dataset>/<model>.jsonl` — model answers
-- `matches/pairwise_comparisons/<hash>/<dataset>/...` — pairwise judgments
-- `matches/answer_matching/<judge>/<dataset>/<model>.csv` — direct-judge labels
-- `bootstrap/<dataset>/<models_id>/...` — bootstrap rankings
-
-`<hash>` is an MD5 of the sorted model-ID set, tracked in
-`out/model_set_ids.txt`. Rankings are recomputed from cached matches on each
-invocation — delete the relevant cache file to force re-collection.
+Cache layout and prompt-template paths are detailed in
+[APPENDIX.md](APPENDIX.md).
 
 ## Citation
 
